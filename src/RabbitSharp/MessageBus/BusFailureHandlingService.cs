@@ -5,7 +5,7 @@ using RabbitSharp.Abstractions;
 
 namespace RabbitSharp.MessageBus
 {
-    public sealed class BusFailureHandlingService : IBusFailureHandlingService
+    internal sealed class BusFailureHandlingService : IBusFailureHandlingService
     {
         private readonly ILogger<BusFailureHandlingService> _logger;
         private readonly INamingConventions _namingConventions;
@@ -63,9 +63,7 @@ namespace RabbitSharp.MessageBus
             var maxDelayMs = busResilience.MaxDeliveryRetryDelay.TotalMilliseconds;
             var delayMs = (int)Math.Min(exponentialDelayMs, maxDelayMs);
 
-            var originalHeaders = eventArgs.BasicProperties.Headers
-                ?? throw new ArgumentNullException(nameof(queueName), "Message headers are required for retry processing.");
-
+            var originalHeaders = eventArgs.BasicProperties.Headers ?? new Dictionary<string, object?>();
             var headers = new Dictionary<string, object?>(originalHeaders);
 
             var retryProperties = new BasicProperties
@@ -74,7 +72,7 @@ namespace RabbitSharp.MessageBus
                 Persistent = true,
                 Timestamp = eventArgs.BasicProperties.Timestamp,
                 Expiration = delayMs.ToString(),
-                Headers = headers!
+                Headers = headers
             };
 
             retryProperties.Headers["x-retry-count"] = retryCount;
@@ -94,9 +92,7 @@ namespace RabbitSharp.MessageBus
         {
             var deadLetterQueueName = $"{queueName}.deadletter";
 
-            var originalHeaders = eventArgs.BasicProperties.Headers
-                ?? throw new ArgumentNullException(nameof(queueName), "Message headers are required for dead letter processing.");
-
+            var originalHeaders = eventArgs.BasicProperties.Headers ?? new Dictionary<string, object?>();
             var headers = new Dictionary<string, object?>(originalHeaders);
 
             var dlqProperties = new BasicProperties

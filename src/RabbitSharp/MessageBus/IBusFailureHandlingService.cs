@@ -8,7 +8,7 @@ namespace RabbitSharp.MessageBus
     /// Defines methods for handling message bus failures,
     /// including retry and dead-letter queue operations.
     /// </summary>
-    public interface IBusFailureHandlingService
+    internal interface IBusFailureHandlingService
     {
         /// <summary>
         /// Declares the necessary retry and dead-letter infrastructure

@@ -9,7 +9,7 @@ using System.Text.Json;
 
 namespace RabbitSharp.MessageBus
 {
-    public sealed class Bus : IBus
+    internal sealed class Bus : IBus
     {
         private readonly BrokerOptions _brokerOptions = new();
         private readonly BusResilienceOptions _busResilienceOptions = new();
@@ -68,7 +68,8 @@ namespace RabbitSharp.MessageBus
             {
                 MessageId = message.CorrelationId.ToString(),
                 Persistent = true,
-                Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+                Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds()),
+                Headers = new Dictionary<string, object?>()
             };
 
             await _channel.BasicPublishAsync(exchangeName, routingKey, false, properties, body, cancellationToken);

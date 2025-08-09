@@ -1,6 +1,4 @@
-﻿using RabbitMQ.Client;
-
-namespace RabbitSharp.Abstractions
+﻿namespace RabbitSharp.Abstractions
 {
     public class SimpleNamingConventions : INamingConventions
     {
