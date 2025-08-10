@@ -3,91 +3,78 @@
 namespace RabbitSharp.Abstractions
 {
     /// <summary>
-    /// Defines a generic messaging bus interface for publishing and subscribing to RabbitMQ messages.
+    /// Defines a generic message bus abstraction for publishing and subscribing to RabbitMQ messages.
+    /// Supports flexible configuration of exchanges, queues, and routing options.
     /// </summary>
     public interface IBus : IDisposable
     {
         /// <summary>
-        /// Publishes a message to the bus.
+        /// Publishes a message to the bus using the default configuration.
         /// </summary>
         /// <typeparam name="T">
-        /// The type of message to publish. Must implement <see cref="IMessage"/>.
+        /// The message type. Must implement <see cref="IMessage"/>.
         /// </typeparam>
         /// <param name="message">
         /// The message instance to publish. Cannot be <see langword="null"/>.
         /// </param>
         /// <param name="cancellationToken">
-        /// A token to observe while waiting for the task to complete. Defaults to <see cref="CancellationToken.None"/>.
+        /// Optional cancellation token to abort the operation.
         /// </param>
-        /// <returns>
-        /// A task that represents the asynchronous publish operation.
-        /// </returns>
         Task PublishAsync<T>(T message, CancellationToken cancellationToken = default)
             where T : IMessage;
 
         /// <summary>
-        /// Publishes a message to the bus using a specific exchange type.
+        /// Publishes a message with custom publisher settings, including exchange, routing, and delivery options.
         /// </summary>
         /// <typeparam name="T">
-        /// The type of message to publish. Must implement <see cref="IMessage"/>.
+        /// The message type. Must implement <see cref="IMessage"/>.
         /// </typeparam>
+        /// <param name="options">
+        /// Publisher configuration, such as exchange type, routing key, and durability.
+        /// </param>
         /// <param name="message">
         /// The message instance to publish. Cannot be <see langword="null"/>.
         /// </param>
-        /// <param name="exchangeType">
-        /// The type of exchange to use for publishing.
-        /// </param>
         /// <param name="cancellationToken">
-        /// A token to observe while waiting for the task to complete. Defaults to <see cref="CancellationToken.None"/>.
+        /// Optional cancellation token to abort the operation.
         /// </param>
-        /// <returns>
-        /// A task that represents the asynchronous publish operation.
-        /// </returns>
         Task PublishAsync<T>(PublisherOptions options, T message, CancellationToken cancellationToken = default)
              where T : IMessage;
 
         /// <summary>
-        /// Subscribes to a queue and registers a handler for processing messages of type <typeparamref name="T"/>.
+        /// Subscribes to a queue and processes messages of type <typeparamref name="T"/> using a specified handler.
         /// </summary>
         /// <typeparam name="T">
-        /// The type of message to subscribe to. Must implement <see cref="IMessage"/>.
+        /// The message type. Must implement <see cref="IMessage"/>.
         /// </typeparam>
         /// <param name="queueName">
-        /// The name of the queue to subscribe to.
+        /// The target queue name.
         /// </param>
         /// <param name="onMessage">
-        /// The asynchronous handler invoked when a message is received.
+        /// Asynchronous callback invoked when a message is received.
         /// </param>
         /// <param name="cancellationToken">
-        /// A token to observe while waiting for the subscription to complete. Defaults to <see cref="CancellationToken.None"/>.
+        /// Optional cancellation token to stop the subscription.
         /// </param>
-        /// <returns>
-        /// A task that represents the asynchronous subscription operation.
-        /// </returns>
         Task SubscribeAsync<T>(string queueName, Func<T, Task> onMessage, CancellationToken cancellationToken = default)
             where T : IMessage;
 
         /// <summary>
-        /// Subscribes to a queue and registers a handler for processing messages of type <typeparamref name="T"/> using a specific exchange type.
+        /// Subscribes to a queue with full infrastructure configuration (exchange, bindings, DLQ, retry, etc.)
+        /// and processes messages of type <typeparamref name="T"/>.
         /// </summary>
         /// <typeparam name="T">
-        /// The type of message to subscribe to. Must implement <see cref="IMessage"/>.
+        /// The message type. Must implement <see cref="IMessage"/>.
         /// </typeparam>
-        /// <param name="queueName">
-        /// The name of the queue to subscribe to.
+        /// <param name="options">
+        /// Complete bus infrastructure configuration for this subscription.
         /// </param>
         /// <param name="onMessage">
-        /// The asynchronous handler invoked when a message is received.
-        /// </param>
-        /// <param name="exchangeType">
-        /// The type of exchange to bind the subscription to.
+        /// Asynchronous callback invoked when a message is received.
         /// </param>
         /// <param name="cancellationToken">
-        /// A token to observe while waiting for the subscription to complete. Defaults to <see cref="CancellationToken.None"/>.
+        /// Optional cancellation token to stop the subscription.
         /// </param>
-        /// <returns>
-        /// A task that represents the asynchronous subscription operation.
-        /// </returns>
         Task SubscribeAsync<T>(BusInfrastructureOptions options, Func<T, Task> onMessage, CancellationToken cancellationToken = default)
            where T : IMessage;
     }

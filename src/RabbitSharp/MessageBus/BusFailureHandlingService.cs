@@ -57,8 +57,6 @@ namespace RabbitSharp.MessageBus
                IChannel channel,
                CancellationToken cancellationToken)
         {
-            var retryQueueName = $"{queueName}.retry";
-
             var baseDelayMs = busResilience.InitialDeliveryRetryDelay.TotalMilliseconds;
             var exponentialDelayMs = baseDelayMs * Math.Pow(2, retryCount - 1);
 
@@ -79,10 +77,10 @@ namespace RabbitSharp.MessageBus
 
             retryProperties.Headers["x-retry-count"] = retryCount;
 
-            await channel.BasicPublishAsync(string.Empty, retryQueueName, false, retryProperties, eventArgs.Body, cancellationToken);
+            await channel.BasicPublishAsync(string.Empty, queueName, false, retryProperties, eventArgs.Body, cancellationToken);
 
             _logger.LogInformation("Message {CorrelationId} sent to retry queue {RetryQueueName} with delay {DelayMs}ms (max: {MaxDelayMs}ms). Retry count: {RetryCount}",
-                correlationId, retryQueueName, delayMs, maxDelayMs, retryCount);
+                correlationId, queueName, delayMs, maxDelayMs, retryCount);
         }
 
         public async Task SendToDeadLetterQueueAsync(
@@ -92,8 +90,6 @@ namespace RabbitSharp.MessageBus
             IChannel channel,
             CancellationToken cancellationToken)
         {
-            var deadLetterQueueName = $"{queueName}.deadletter";
-
             var originalHeaders = eventArgs.BasicProperties.Headers ?? new Dictionary<string, object?>();
             var headers = new Dictionary<string, object?>(originalHeaders);
 
@@ -105,14 +101,14 @@ namespace RabbitSharp.MessageBus
                 Headers = headers
             };
 
-            dlqProperties.Headers["x-original-queue"] = queueName;
+            dlqProperties.Headers["x-original-queue"] = queueName.Replace(".deadletter", string.Empty);
             dlqProperties.Headers["x-failed-at"] = DateTimeOffset.UtcNow.ToString("O");
             dlqProperties.Headers["x-final-retry-count"] = GetRetryCount(eventArgs.BasicProperties);
 
-            await channel.BasicPublishAsync(string.Empty, deadLetterQueueName, false, dlqProperties, eventArgs.Body, cancellationToken);
+            await channel.BasicPublishAsync(string.Empty, queueName, false, dlqProperties, eventArgs.Body, cancellationToken);
 
             _logger.LogError("Message {CorrelationId} sent to dead letter queue {DeadLetterQueueName} after {RetryCount} failed attempts",
-                correlationId, deadLetterQueueName, GetRetryCount(eventArgs.BasicProperties));
+                correlationId, queueName, GetRetryCount(eventArgs.BasicProperties));
         }
 
         public int GetRetryCount(IReadOnlyBasicProperties? properties)
