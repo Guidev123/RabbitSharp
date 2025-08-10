@@ -4,6 +4,10 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Exceptions;
 using RabbitSharp.Abstractions;
+using RabbitSharp.Builders;
+using RabbitSharp.Enums;
+using RabbitSharp.Extensions;
+using RabbitSharp.MessageBus.Options;
 using System.Net.Sockets;
 using System.Text.Json;
 
@@ -51,17 +55,23 @@ namespace RabbitSharp.MessageBus
 
         public async Task PublishAsync<T>(T message, CancellationToken cancellationToken = default) where T : IMessage
         {
-            await PublishAsync(message, ExchangeTypeEnum.Topic, cancellationToken);
+            var options = new PublisherOptionsBuilder()
+                .WithExchange(exchange =>
+                {
+                    exchange.WithName(_namingConventions.GetExchangeName<T>());
+                    exchange.WithType(ExchangeTypeEnum.Topic);
+                })
+                .WithRoutingKey(_namingConventions.GetRoutingKey<T>(ExchangeTypeEnum.Topic))
+                .Build();
+
+            await PublishAsync(options, message, cancellationToken);
         }
 
-        public async Task PublishAsync<T>(T message, ExchangeTypeEnum exchangeType, CancellationToken cancellationToken = default) where T : IMessage
+        public async Task PublishAsync<T>(PublisherOptions options, T message, CancellationToken cancellationToken = default) where T : IMessage
         {
             await EnsureConnectedAsync();
 
-            var exchangeName = _namingConventions.GetExchangeName<T>();
-            var routingKey = _namingConventions.GetRoutingKey<T>(exchangeType);
-
-            await _channel.ExchangeDeclareAsync(exchangeName, exchangeType.GetEnumDescription(), true, cancellationToken: cancellationToken);
+            await _channel.ExchangeDeclareAsync(options.Exchange.ExchangeName!, options.Exchange.Type.GetEnumDescription(), true, arguments: options.Exchange.Arguments, cancellationToken: cancellationToken);
 
             var body = JsonSerializer.SerializeToUtf8Bytes(message);
             var properties = new BasicProperties
@@ -72,21 +82,30 @@ namespace RabbitSharp.MessageBus
                 Headers = new Dictionary<string, object?>()
             };
 
-            await _channel.BasicPublishAsync(exchangeName, routingKey, false, properties, body, cancellationToken);
+            await _channel.BasicPublishAsync(options.Exchange.ExchangeName!, options.RoutingKey!, false, properties, body, cancellationToken);
 
             _logger.LogInformation("Published message {Message} with ID {CorrelationId} to exchange {ExchangeName}.",
-                typeof(T).Name, message.CorrelationId, exchangeName);
+                typeof(T).Name, message.CorrelationId, options.Exchange.ExchangeName);
         }
 
         public async Task SubscribeAsync<T>(string queueName, Func<T, Task> onMessage, CancellationToken cancellationToken = default) where T : IMessage
         {
-            await SubscribeAsync(queueName, onMessage, ExchangeTypeEnum.Topic, cancellationToken);
+            var options = new BusInfrastructureBuilder(queueName)
+                .WithExchange(exchange =>
+                {
+                    exchange.WithType(ExchangeTypeEnum.Topic);
+                    exchange.WithName(_namingConventions.GetExchangeName<T>());
+                })
+                .WithRoutingKey(_namingConventions.GetRoutingKey<T>(ExchangeTypeEnum.Topic))
+                .Build();
+
+            await SubscribeAsync(options, onMessage, cancellationToken);
         }
 
-        public async Task SubscribeAsync<T>(string queueName, Func<T, Task> onMessage, ExchangeTypeEnum exchangeType, CancellationToken cancellationToken = default) where T : IMessage
+        public async Task SubscribeAsync<T>(BusInfrastructureOptions options, Func<T, Task> onMessage, CancellationToken cancellationToken = default) where T : IMessage
         {
             await EnsureConnectedAsync();
-            await _busFailureHandlingService.DeclareInfrastructureAsync<T>(queueName, _channel, exchangeType, cancellationToken);
+            await _busFailureHandlingService.DeclareInfrastructureAsync<T>(options, _channel, cancellationToken);
 
             var consumer = new AsyncEventingBasicConsumer(_channel);
             consumer.ReceivedAsync += async (model, eventArgs) =>
@@ -102,7 +121,7 @@ namespace RabbitSharp.MessageBus
                     if (message is null)
                     {
                         _logger.LogError("Failed to deserialize message {CorrelationId} from queue {QueueName}",
-                            correlationId, queueName);
+                            correlationId, options.MainQueue.QueueName);
 
                         await _channel.BasicAckAsync(deliveryTag, false);
 
@@ -110,19 +129,19 @@ namespace RabbitSharp.MessageBus
                     }
 
                     _logger.LogInformation("Received message {Message} with ID {CorrelationId} from queue {QueueName}",
-                        typeof(T).Name, message.CorrelationId, queueName);
+                        typeof(T).Name, message.CorrelationId, options.MainQueue.QueueName);
 
                     await onMessage(message);
 
                     await _channel.BasicAckAsync(deliveryTag, false);
 
                     _logger.LogInformation("Processed message {Message} with ID {CorrelationId} from queue {QueueName}",
-                        typeof(T).Name, message.CorrelationId, queueName);
+                        typeof(T).Name, message.CorrelationId, options.MainQueue.QueueName);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error processing message {CorrelationId} from queue {QueueName}",
-                        correlationId, queueName);
+                        correlationId, options.MainQueue.QueueName);
 
                     var retryCount = _busFailureHandlingService.GetRetryCount(eventArgs.BasicProperties);
 
@@ -130,7 +149,7 @@ namespace RabbitSharp.MessageBus
                     {
                         await _busFailureHandlingService.SendToRetryQueueAsync(
                             eventArgs,
-                            queueName,
+                            options.RetryQueue.QueueName,
                             retryCount + 1,
                             correlationId,
                             _busResilienceOptions,
@@ -144,11 +163,11 @@ namespace RabbitSharp.MessageBus
                     else
                     {
                         _logger.LogError("Message {CorrelationId} from queue {QueueName} exceeded maximum retries ({MaxDeliveryRetryAttempts})",
-                            correlationId, queueName, _busResilienceOptions.MaxDeliveryRetryAttempts);
+                            correlationId, options.MainQueue.QueueName, _busResilienceOptions.MaxDeliveryRetryAttempts);
 
                         await _busFailureHandlingService.SendToDeadLetterQueueAsync(
                             eventArgs,
-                            queueName,
+                            options.DeadLetterQueue.QueueName,
                             correlationId,
                             _channel,
                             cancellationToken);
@@ -158,7 +177,7 @@ namespace RabbitSharp.MessageBus
                 }
             };
 
-            await _channel.BasicConsumeAsync(queueName, false, consumer, cancellationToken: cancellationToken);
+            await _channel.BasicConsumeAsync(options.MainQueue.QueueName, false, consumer, cancellationToken: cancellationToken);
         }
 
         private async Task TryConnect()

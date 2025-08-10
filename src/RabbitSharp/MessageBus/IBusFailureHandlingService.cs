@@ -1,6 +1,7 @@
 ﻿using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitSharp.Abstractions;
+using RabbitSharp.MessageBus.Options;
 
 namespace RabbitSharp.MessageBus
 {
@@ -10,25 +11,6 @@ namespace RabbitSharp.MessageBus
     /// </summary>
     internal interface IBusFailureHandlingService
     {
-        /// <summary>
-        /// Declares the necessary retry and dead-letter infrastructure
-        /// for a specific message type in the given queue.
-        /// </summary>
-        /// <typeparam name="T">
-        /// The type of message for which to declare infrastructure. Must implement <see cref="IMessage"/>.
-        /// </typeparam>
-        /// <param name="queueName">
-        /// The name of the queue where the message will be processed.
-        /// </param>
-        /// <param name="channel">
-        /// The channel used to declare the infrastructure.
-        /// </param>
-        /// <param name="cancellationToken">
-        /// A token to observe while waiting for the operation to complete. Defaults to <see cref="CancellationToken.None"/>.
-        /// </param>
-        Task DeclareInfrastructureAsync<T>(string queueName, IChannel channel, CancellationToken cancellationToken = default)
-            where T : IMessage;
-
         /// <summary>
         /// Declares the necessary retry and dead-letter infrastructure
         /// for a specific message type in the given queue, using a specific exchange type.
@@ -48,7 +30,7 @@ namespace RabbitSharp.MessageBus
         /// <param name="cancellationToken">
         /// A token to observe while waiting for the operation to complete. Defaults to <see cref="CancellationToken.None"/>.
         /// </param>
-        Task DeclareInfrastructureAsync<T>(string queueName, IChannel channel, ExchangeTypeEnum exchangeType, CancellationToken cancellationToken = default)
+        Task DeclareInfrastructureAsync<T>(BusInfrastructureOptions options, IChannel channel, CancellationToken cancellationToken = default)
             where T : IMessage;
 
         /// <summary>

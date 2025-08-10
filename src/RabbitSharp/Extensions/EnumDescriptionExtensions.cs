@@ -1,11 +1,11 @@
 ﻿using System.ComponentModel;
 using System.Reflection;
 
-namespace RabbitSharp.Abstractions
+namespace RabbitSharp.Extensions
 {
-    internal static class ExchangeTypeEnumExtensions
+    internal static class EnumDescriptionExtensions
     {
-        public static string GetEnumDescription(this ExchangeTypeEnum value)
+        public static string GetEnumDescription(this Enum value)
         {
             FieldInfo fi = value.GetType().GetField(value.ToString()) ?? default!;
 

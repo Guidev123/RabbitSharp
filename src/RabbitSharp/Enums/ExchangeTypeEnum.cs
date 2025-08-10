@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace RabbitSharp.Abstractions
+namespace RabbitSharp.Enums
 {
     public enum ExchangeTypeEnum
     {

@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using RabbitSharp.Abstractions;
 using RabbitSharp.MessageBus;
+using RabbitSharp.MessageBus.Options;
 
 namespace RabbitSharp.DependencyInjection
 {

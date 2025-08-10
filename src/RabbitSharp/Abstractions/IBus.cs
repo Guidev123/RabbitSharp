@@ -1,4 +1,6 @@
-﻿namespace RabbitSharp.Abstractions
+﻿using RabbitSharp.MessageBus.Options;
+
+namespace RabbitSharp.Abstractions
 {
     /// <summary>
     /// Defines a generic messaging bus interface for publishing and subscribing to RabbitMQ messages.
@@ -41,8 +43,8 @@
         /// <returns>
         /// A task that represents the asynchronous publish operation.
         /// </returns>
-        Task PublishAsync<T>(T message, ExchangeTypeEnum exchangeType, CancellationToken cancellationToken = default)
-            where T : IMessage;
+        Task PublishAsync<T>(PublisherOptions options, T message, CancellationToken cancellationToken = default)
+             where T : IMessage;
 
         /// <summary>
         /// Subscribes to a queue and registers a handler for processing messages of type <typeparamref name="T"/>.
@@ -86,7 +88,7 @@
         /// <returns>
         /// A task that represents the asynchronous subscription operation.
         /// </returns>
-        Task SubscribeAsync<T>(string queueName, Func<T, Task> onMessage, ExchangeTypeEnum exchangeType, CancellationToken cancellationToken = default)
-            where T : IMessage;
+        Task SubscribeAsync<T>(BusInfrastructureOptions options, Func<T, Task> onMessage, CancellationToken cancellationToken = default)
+           where T : IMessage;
     }
 }

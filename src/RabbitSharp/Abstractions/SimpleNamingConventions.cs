@@ -1,4 +1,6 @@
-﻿namespace RabbitSharp.Abstractions
+﻿using RabbitSharp.Enums;
+
+namespace RabbitSharp.Abstractions
 {
     public class SimpleNamingConventions : INamingConventions
     {

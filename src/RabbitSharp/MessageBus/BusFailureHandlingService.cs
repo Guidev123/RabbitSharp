@@ -2,6 +2,8 @@
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitSharp.Abstractions;
+using RabbitSharp.Extensions;
+using RabbitSharp.MessageBus.Options;
 
 namespace RabbitSharp.MessageBus
 {
@@ -16,34 +18,34 @@ namespace RabbitSharp.MessageBus
             _namingConventions = namingConventions;
         }
 
-        public async Task DeclareInfrastructureAsync<T>(string queueName, IChannel channel, CancellationToken cancellationToken = default) where T : IMessage
+        public async Task DeclareInfrastructureAsync<T>(BusInfrastructureOptions options, IChannel channel, CancellationToken cancellationToken = default) where T : IMessage
         {
-            await DeclareInfrastructureAsync<T>(queueName, channel, ExchangeTypeEnum.Topic, cancellationToken);
-        }
-
-        public async Task DeclareInfrastructureAsync<T>(string queueName, IChannel channel, ExchangeTypeEnum exchangeType, CancellationToken cancellationToken = default) where T : IMessage
-        {
-            var exchangeName = _namingConventions.GetExchangeName<T>();
-            var routingKey = _namingConventions.GetRoutingKey<T>(exchangeType);
-            var retryQueueName = $"{queueName}.retry";
-            var deadLetterQueueName = $"{queueName}.deadletter";
-
-            await Task.WhenAll(
-                channel.ExchangeDeclareAsync(exchangeName, exchangeType.GetEnumDescription(), true, cancellationToken: cancellationToken),
-                channel.QueueDeclareAsync(queueName, true, false, false, cancellationToken: cancellationToken),
-                channel.QueueDeclareAsync(deadLetterQueueName, true, false, false, cancellationToken: cancellationToken)
-                );
-
-            var retryQueueArgs = new Dictionary<string, object?>
+            if (string.IsNullOrEmpty(options.Exchange.ExchangeName))
             {
-                {"x-dead-letter-exchange", exchangeName},
-                {"x-dead-letter-routing-key", routingKey}
-            };
+                options.Exchange.ExchangeName = _namingConventions.GetExchangeName<T>();
+            }
+
+            if (string.IsNullOrEmpty(options.RoutingKey))
+            {
+                options.RoutingKey = _namingConventions.GetRoutingKey<T>(options.Exchange.Type);
+            }
 
             await Task.WhenAll(
-                channel.QueueDeclareAsync(retryQueueName, true, false, false, retryQueueArgs, cancellationToken: cancellationToken),
-                channel.QueueBindAsync(queueName, exchangeName, routingKey, cancellationToken: cancellationToken)
+                channel.ExchangeDeclareAsync(options.Exchange.ExchangeName, options.Exchange.Type.GetEnumDescription(), options.Exchange.Durable, arguments: options.Exchange.Arguments, cancellationToken: cancellationToken),
+                DeclareQueueAsync(channel, options.MainQueue, cancellationToken),
+                DeclareQueueAsync(channel, options.DeadLetterQueue, cancellationToken)
                 );
+
+            var retryConfig = options.RetryQueue;
+            retryConfig.Arguments["x-dead-letter-exchange"] = options.Exchange.ExchangeName;
+            retryConfig.Arguments["x-dead-letter-routing-key"] = options.RoutingKey;
+
+            await Task.WhenAll(
+                DeclareQueueAsync(channel, retryConfig, cancellationToken),
+                channel.QueueBindAsync(options.MainQueue.QueueName, options.Exchange.ExchangeName, options.RoutingKey, cancellationToken: cancellationToken)
+            );
+
+            _logger.LogInformation("Infrastructure declared for {QueueName} with custom options", options.MainQueue.QueueName);
         }
 
         public async Task SendToRetryQueueAsync(
@@ -125,6 +127,17 @@ namespace RabbitSharp.MessageBus
                 };
             }
             return 0;
+        }
+
+        private static async Task DeclareQueueAsync(IChannel channel, QueueOptions options, CancellationToken cancellationToken)
+        {
+            await channel.QueueDeclareAsync(
+                options.QueueName,
+                options.Durable,
+                options.Exclusive,
+                options.AutoDelete,
+                options.Arguments,
+                cancellationToken: cancellationToken);
         }
     }
 }

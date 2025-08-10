@@ -1,4 +1,4 @@
-﻿namespace RabbitSharp.MessageBus
+﻿namespace RabbitSharp.MessageBus.Options
 {
     /// <summary>
     /// Defines connection settings for the RabbitMQ broker.

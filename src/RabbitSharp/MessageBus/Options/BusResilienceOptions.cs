@@ -1,4 +1,4 @@
-﻿namespace RabbitSharp.MessageBus
+﻿namespace RabbitSharp.MessageBus.Options
 {
     /// <summary>
     /// Defines resilience options for message delivery, including retry behavior and delay settings.

@@ -1,4 +1,7 @@
-﻿namespace RabbitSharp.Abstractions
+﻿using RabbitSharp.Abstractions;
+using RabbitSharp.Enums;
+
+namespace RabbitSharp.Extensions
 {
     internal static class BusNameConvetionsExtensions
     {
