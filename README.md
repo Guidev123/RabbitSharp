@@ -1,3 +1,18 @@
+<p align="center">
+  <a href="https://dotnet.microsoft.com/" target="_blank">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/e/ee/.NET_Core_Logo.svg" width="120" alt=".NET Logo" />
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://www.nuget.org/packages/RabbitSharp">
+    <img class="badge" src="https://img.shields.io/nuget/v/RabbitSharp?color=purple&label=RabbitSharp" alt="RabbitSharp NuGet version" />
+  </a>
+  <a href="https://www.nuget.org/packages/RabbitSharp">
+    <img class="badge" src="https://img.shields.io/nuget/dt/RabbitSharp?color=blue" alt="RabbitSharp NuGet downloads" />
+  </a>
+</p>
+
 # RabbitSharp
 
 A high-performance, highly customizable RabbitMQ Pub/Sub library for .NET 6+ applications with built-in retry mechanisms and dead letter queue support.
