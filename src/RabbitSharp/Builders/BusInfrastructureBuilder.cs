@@ -32,13 +32,11 @@ namespace RabbitSharp.Builders
             {
                 {"x-max-length", 50000},
                 {"x-overflow", "drop-head"},
-                {"x-max-priority", 10},
-                {"x-expires", 86400000}
+                {"x-max-priority", 10}
             };
 
             _config.RetryQueue.Arguments = new Dictionary<string, object?>
             {
-                {"x-expires", 3600000},
                 {"x-max-length", 10000},
                 {"x-overflow", "reject-publish"}
             };
@@ -46,8 +44,7 @@ namespace RabbitSharp.Builders
             _config.DeadLetterQueue.Arguments = new Dictionary<string, object?>
             {
                 {"x-max-length", 100000},
-                {"x-overflow", "drop-head"},
-                {"x-expires", 2592000000}
+                {"x-overflow", "drop-head"}
             };
         }
 
