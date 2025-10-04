@@ -1,4 +1,4 @@
-﻿namespace RabbitSharp.MessageBus.Options
+﻿namespace RabbitSharp.Options
 {
     /// <summary>
     /// Defines connection settings for the RabbitMQ broker.
@@ -43,5 +43,10 @@
         /// Default is <c>"/"</c>.
         /// </summary>
         public string VirtualHost { get; set; } = "/";
+
+        /// <summary>
+        /// The prefetch count for message consumers, determining how many messages can be sent to a consumer
+        /// </summary>
+        public ushort PrefetchCount { get; set; } = 10;
     }
 }

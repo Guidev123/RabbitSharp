@@ -1,4 +1,4 @@
-﻿using RabbitSharp.MessageBus.Options;
+﻿using RabbitSharp.Options;
 
 namespace RabbitSharp.Abstractions
 {

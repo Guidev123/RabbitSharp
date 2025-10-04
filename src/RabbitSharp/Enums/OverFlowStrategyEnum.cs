@@ -7,9 +7,6 @@ namespace RabbitSharp.Enums
         [Description("reject-publish")]
         RejectPublish,
 
-        [Description("reject-publish-dlx")]
-        RejectPublishDlx,
-
         [Description("drop-head")]
         DropHead,
     }

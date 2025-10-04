@@ -3,9 +3,9 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitSharp.Abstractions;
 using RabbitSharp.Extensions;
-using RabbitSharp.MessageBus.Options;
+using RabbitSharp.Options;
 
-namespace RabbitSharp.MessageBus
+namespace RabbitSharp.Core
 {
     internal sealed class BusFailureHandlingService : IBusFailureHandlingService
     {

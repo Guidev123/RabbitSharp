@@ -1,5 +1,5 @@
 ﻿using RabbitSharp.Enums;
-using RabbitSharp.MessageBus.Options;
+using RabbitSharp.Options;
 
 namespace RabbitSharp.Builders
 {

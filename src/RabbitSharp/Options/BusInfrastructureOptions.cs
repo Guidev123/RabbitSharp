@@ -1,4 +1,4 @@
-﻿namespace RabbitSharp.MessageBus.Options
+﻿namespace RabbitSharp.Options
 {
     /// <summary>
     /// Represents configuration options for RabbitMQ messaging infrastructure,
